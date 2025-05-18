@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Configurações</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .config-container {
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <h1>Configurações</h1>
+        <form method="POST">
+            <label>Nome da Empresa:</label>
+            <input type="text" name="company_name" value="{{ config.company_name if config else '' }}">
+
+            <label>Endereço:</label>
+            <input type="text" name="address" value="{{ config.address if config else '' }}">
+
+            <label>Cidade:</label>
+            <input type="text" name="city" value="{{ config.city if config else '' }}">
+
+            <label>Telefone:</label>
+            <input type="text" name="phone" value="{{ config.phone if config else '' }}">
+
+            <label>Valor por Hora - Carro:</label>
+            <input type="text" name="car_value" required>
+
+            <label>Valor por Hora - Moto:</label>
+            <input type="text" name="moto_value" required>
+
+            <button type="submit">Salvar Configurações</button>
+        </form>
+
+        <div class="back-link">
+            <a href="{{ url_for('dashboard') }}">Voltar ao Painel</a>
+        </div>
+    </div>
+</body>
+</html>

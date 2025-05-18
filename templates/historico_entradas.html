@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico de Entradas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <ul>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li class="dropdown">
+                <a href="#">Histórico</a>
+                <ul class="submenu">
+                    <li><a href="/historico/entradas">Entradas</a></li>
+                    <li><a href="/historico/saidas">Saídas</a></li>
+                </ul>
+            </li>
+            <li><a href="/logout">Sair</a></li>
+        </ul>
+    </div>
+
+    <div class="content">
+        <h2>Histórico de Entradas</h2>
+        <table>
+            <tr>
+                <th>Placa</th>
+                <th>Tipo</th>
+                <th>Data/Hora de Entrada</th>
+            </tr>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.plate }}</td>
+                <td>{{ entry.vehicle_type }}</td>
+                <td>{{ entry.entry_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html>
