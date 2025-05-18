@@ -5,12 +5,13 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from werkzeug.security import check_password_hash
-from flask import flash, redirect, render_template
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
 db.init_app(app)
+migrate = Migrate(app, db)
 
 # Criar tabelas e dados iniciais
 with app.app_context():
@@ -32,10 +33,8 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        # Procurar pelo usuário no banco de dados
         user = User.query.filter_by(username=username).first()
 
-        # Verificar se o usuário existe e se a senha está correta
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             return redirect('/dashboard')
@@ -45,22 +44,18 @@ def login():
 
     return render_template('login.html')
 
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
-        # Verificar se o campo de senha está vazio
         if not username or not password:
             flash("Por favor, preencha todos os campos.")
             return redirect('/register')
 
-        # Gerar o hash da senha com pbkdf2:sha256
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-        # Salvar no banco de dados
         user = User(username=username, password=hashed_password)
         db.session.add(user)
         db.session.commit()
@@ -92,7 +87,6 @@ def entry():
     db.session.add(entry)
     db.session.commit()
     return generate_pdf_response(plate, entry.entry_time, vehicle_type, entry=True)
-
 
 @app.route('/exit/<plate>')
 def exit_vehicle(plate):
@@ -137,7 +131,6 @@ def config():
         return redirect('/dashboard')
     return render_template('config.html', config=config)
 
-# Gera PDF em memória e envia para navegador
 def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=True):
     buffer = BytesIO()
     config = ConfigData.query.first()
@@ -145,7 +138,7 @@ def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=Tru
     c = canvas.Canvas(buffer, pagesize=(400, 300))
     c.setFont("Helvetica", 10)
     c.drawCentredString(200, 280, "Estacionamento - " + ("Entrada" if entry else "Saída"))
-    
+
     if config:
         c.drawCentredString(200, 260, config.company_name or "")
         c.drawCentredString(200, 240, f"{config.address or ''}, {config.city or ''}")
@@ -180,13 +173,11 @@ def logout():
 
 @app.route('/historico/entradas')
 def historico_entradas():
-    # Buscar entradas no banco de dados
     entries = Entry.query.all()
     return render_template('historico_entradas.html', entries=entries)
 
 @app.route('/historico/saidas')
 def historico_saidas():
-    # Buscar saídas no banco de dados
     exits = Exit.query.all()
     return render_template('historico_saidas.html', exits=exits)
 
