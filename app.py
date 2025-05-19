@@ -77,36 +77,45 @@ def dashboard():
     now_time = datetime.utcnow()
     return render_template('dashboard.html', entries=entries, now=now_time)
 
-# Entrada de veículo
 @app.route('/entry', methods=['POST'])
 def entry():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    user_id = session['user_id']
     plate = request.form['plate'].upper()
     vehicle_type = request.form['vehicle_type']
 
-    if Entry.query.filter_by(plate=plate).first():
+    # Verificar se o veículo já está no pátio para este usuário
+    if Entry.query.filter_by(plate=plate, user_id=user_id).first():
         flash("Veículo já está no pátio.")
         return redirect('/dashboard')
 
-    entry = Entry(plate=plate, vehicle_type=vehicle_type)
+    entry = Entry(plate=plate, vehicle_type=vehicle_type, user_id=user_id)
     db.session.add(entry)
     db.session.commit()
 
     return generate_pdf_response(plate, entry.entry_time, vehicle_type, entry=True)
 
 # Saída de veículo
-@app.route('/exit/<plate>')
+@app.route('/exit/<plate>', methods=['GET'])
 def exit_vehicle(plate):
-    entry = Entry.query.filter_by(plate=plate).first()
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    user_id = session['user_id']
+    entry = Entry.query.filter_by(plate=plate, user_id=user_id).first()
+
     if entry:
         entry_time = entry.entry_time
         exit_time = datetime.utcnow()
         duration = (exit_time - entry_time).total_seconds() / 3600.0
 
-        rate = VehicleType.query.filter_by(type=entry.vehicle_type).first()
+        rate = VehicleType.query.filter_by(type=entry.vehicle_type, user_id=user_id).first()
         value = rate.hour_value
         total_value = value if duration <= 1 else value + (duration - 1) * value
 
-        db.session.add(Exit(plate=plate, exit_time=exit_time, total_value=total_value, duration=duration))
+        db.session.add(Exit(plate=plate, exit_time=exit_time, total_value=total_value, duration=duration, user_id=user_id))
         db.session.delete(entry)
         db.session.commit()
 
@@ -115,14 +124,17 @@ def exit_vehicle(plate):
     flash("Placa não encontrada.")
     return redirect('/dashboard')
 
-# Configurações
 @app.route('/config', methods=['GET', 'POST'])
 def config():
-    config = ConfigData.query.first()
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    user_id = session['user_id']
+    config = ConfigData.query.filter_by(user_id=user_id).first()
 
     if request.method == 'POST':
         if not config:
-            config = ConfigData()
+            config = ConfigData(user_id=user_id)
 
         config.company_name = request.form['company_name']
         config.address = request.form['address']
@@ -133,8 +145,9 @@ def config():
         carro_val = float(request.form['car_value'])
         moto_val = float(request.form['moto_value'])
 
-        VehicleType.query.filter_by(type='Carro').update({'hour_value': carro_val})
-        VehicleType.query.filter_by(type='Moto').update({'hour_value': moto_val})
+        # Atualiza valores de veículo do usuário
+        VehicleType.query.filter_by(user_id=user_id, type='Carro').update({'hour_value': carro_val})
+        VehicleType.query.filter_by(user_id=user_id, type='Moto').update({'hour_value': moto_val})
 
         db.session.commit()
 
