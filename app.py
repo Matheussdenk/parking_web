@@ -14,12 +14,12 @@ db.init_app(app)
 migrate = Migrate(app, db)
 
 # Criação de tabelas e inserção de dados iniciais
-with app.app_context():
-    db.create_all()
-    if not VehicleType.query.filter_by(type='Carro').first():
-        db.session.add(VehicleType(type='Carro', hour_value=5.0))
-        db.session.add(VehicleType(type='Moto', hour_value=3.0))
-        db.session.commit()
+#with app.app_context():
+    #db.create_all()
+    #if not VehicleType.query.filter_by(type='Carro').first():
+        #db.session.add(VehicleType(type='Carro', hour_value=5.0))
+        #db.session.add(VehicleType(type='Moto', hour_value=3.0))
+        #db.session.commit()
 
 # Redirecionamento para login ou dashboard
 @app.route('/')
@@ -86,8 +86,7 @@ def entry():
     plate = request.form['plate'].upper()
     vehicle_type = request.form['vehicle_type']
 
-    # Verificar se o veículo já está no pátio para este usuário
-    if Entry.query.filter_by(plate=plate, user_id=user_id).first():
+    if Entry.query.filter_by(plate=plate).first():
         flash("Veículo já está no pátio.")
         return redirect('/dashboard')
 
@@ -126,18 +125,12 @@ def exit_vehicle(plate):
 
 @app.route('/config', methods=['GET', 'POST'])
 def config():
-    if 'user_id' not in session:
-        print("Usuário não logado. Redirecionando para login.")
-        return redirect('/login')
-
-    user_id = session['user_id']
-    config = ConfigData.query.filter_by(user_id=user_id).first()
+    config = ConfigData.query.first()
 
     if request.method == 'POST':
         print("Formulário enviado.")
         if not config:
-            print("Configuração não encontrada, criando uma nova.")
-            config = ConfigData(user_id=user_id)
+            config = ConfigData()
 
         config.company_name = request.form['company_name']
         config.address = request.form['address']
@@ -148,10 +141,8 @@ def config():
         carro_val = float(request.form['car_value'])
         moto_val = float(request.form['moto_value'])
 
-        # Atualiza valores de veículo do usuário
-        print(f"Atualizando valores: Carro = {carro_val}, Moto = {moto_val}")
-        VehicleType.query.filter_by(user_id=user_id, type='Carro').update({'hour_value': carro_val})
-        VehicleType.query.filter_by(user_id=user_id, type='Moto').update({'hour_value': moto_val})
+        VehicleType.query.filter_by(type='Carro').update({'hour_value': carro_val})
+        VehicleType.query.filter_by(type='Moto').update({'hour_value': moto_val})
 
         db.session.commit()
 
@@ -160,8 +151,8 @@ def config():
 
     return render_template('config.html', config=config)
 
-# Gerador de PDF (entrada e saída)
-def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=True):
+# Gerador de PDF
+def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=True, entry_time=None):
     buffer = BytesIO()
     config = ConfigData.query.first()
 
@@ -176,9 +167,12 @@ def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=Tru
 
     c.drawCentredString(200, 180, f"Placa: {plate}")
     c.drawCentredString(200, 160, f"Tipo: {vehicle_type}")
-    c.drawCentredString(200, 140, f"Data/Hora: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    c.drawCentredString(200, 140, f"{'Entrada' if entry else 'Saída'}: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-    if total_value is not None:
+    if not entry and entry_time:
+        c.drawCentredString(200, 120, f"Entrada: {entry_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        c.drawCentredString(200, 100, f"Valor: R$ {total_value:.2f}")
+    elif total_value is not None:
         c.drawCentredString(200, 120, f"Valor: R$ {total_value:.2f}")
 
     c.showPage()
@@ -192,7 +186,7 @@ def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=Tru
         mimetype='application/pdf'
     )
 
-# Verificação de login para rotas protegidas
+# Verificação de login
 @app.before_request
 def require_login():
     if not session.get("user_id") and request.endpoint not in ('login', 'register', 'static'):
@@ -213,18 +207,38 @@ def historico_entradas():
 # Histórico de saídas
 @app.route("/historico/saidas")
 def saidas():
-    # Exemplo: recuperar as saídas do banco de dados
-    saidas = db.session.query(Saida).all()  # ou o nome correto do seu modelo
+    saidas = db.session.query(Exit).all()
     return render_template("saidas.html", saidas=saidas)
 
+# Saída personalizada
 @app.route('/saida/personalizada', methods=['POST'])
 def exit_vehicle_custom():
-    plate = request.form['plate']
-    custom_value = request.form['custom_value']
-    # Aqui você coloca a lógica para registrar a saída com valor personalizado
-    # ...
-    flash(f"Saída registrada com valor personalizado para {plate}: R$ {custom_value}")
-    return redirect(url_for('dashboard'))
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    plate = request.form['plate'].upper()
+    custom_value = float(request.form['custom_value'])
+    user_id = session['user_id']
+
+    entry = Entry.query.filter_by(plate=plate, user_id=user_id).first()
+    if not entry:
+        flash("Veículo não encontrado no pátio.")
+        return redirect(url_for('dashboard'))
+
+    exit_time = datetime.utcnow()
+    duration = (exit_time - entry.entry_time).total_seconds() / 3600.0
+
+    db.session.add(Exit(
+        plate=plate,
+        exit_time=exit_time,
+        total_value=custom_value,
+        duration=duration,
+        user_id=user_id
+    ))
+    db.session.delete(entry)
+    db.session.commit()
+
+    return generate_pdf_response(plate, exit_time, entry.vehicle_type, total_value=custom_value, entry=False, entry_time=entry.entry_time)
 
 # Inicialização do servidor
 if __name__ == '__main__':

@@ -29,14 +29,11 @@ class ConfigData(db.Model):
 
 # Modelo de Tipo de Veículo (Cada estacionamento terá seus próprios tipos de veículos)
 class VehicleType(db.Model):
+    __tablename__ = 'vehicle_type'
     id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String(20), unique=False, nullable=False)  # Removi unique=True, pois vários usuários podem ter o mesmo tipo de veículo
+    type = db.Column(db.String(20), unique=True, nullable=False)
     hour_value = db.Column(db.Float, nullable=False)
-    
-    # Relacionamento com o User
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Relacionamento com User
 
-# Modelo de Entrada de Veículo (Cada entrada será associada ao usuário)
 class Entry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     plate = db.Column(db.String(10), nullable=False)
@@ -53,6 +50,3 @@ class Exit(db.Model):
     exit_time = db.Column(db.DateTime, default=datetime.utcnow)
     total_value = db.Column(db.Float, nullable=False)
     duration = db.Column(db.Float, nullable=False)
-    
-    # Relacionamento com o User
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Relacionamento com User
