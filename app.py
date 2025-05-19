@@ -198,11 +198,11 @@ def require_login():
     if not session.get("user_id") and request.endpoint not in ('login', 'register', 'static'):
         return redirect(url_for('login'))
 
-# Logout
+# logout do sistema
 @app.route('/logout')
 def logout():
-    session.clear()
-    return redirect('/login')
+    session.clear()  # Limpa a sessão do usuário
+    return redirect('/login')  # Redireciona para o login
 
 # Histórico de entradas
 @app.route('/historico/entradas')
