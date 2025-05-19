@@ -127,13 +127,16 @@ def exit_vehicle(plate):
 @app.route('/config', methods=['GET', 'POST'])
 def config():
     if 'user_id' not in session:
+        print("Usuário não logado. Redirecionando para login.")
         return redirect('/login')
 
     user_id = session['user_id']
     config = ConfigData.query.filter_by(user_id=user_id).first()
 
     if request.method == 'POST':
+        print("Formulário enviado.")
         if not config:
+            print("Configuração não encontrada, criando uma nova.")
             config = ConfigData(user_id=user_id)
 
         config.company_name = request.form['company_name']
@@ -146,6 +149,7 @@ def config():
         moto_val = float(request.form['moto_value'])
 
         # Atualiza valores de veículo do usuário
+        print(f"Atualizando valores: Carro = {carro_val}, Moto = {moto_val}")
         VehicleType.query.filter_by(user_id=user_id, type='Carro').update({'hour_value': carro_val})
         VehicleType.query.filter_by(user_id=user_id, type='Moto').update({'hour_value': moto_val})
 
