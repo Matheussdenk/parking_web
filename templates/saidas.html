@@ -102,6 +102,11 @@
     tr:hover {
       background-color: #e8e8e8;
     }
+    .total-value {
+      font-weight: 700;
+      font-size: 1.2em;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -132,13 +137,15 @@
       </thead>
       <tbody>
         {% if saidas %}
+          {% set total_value = 0 %}
           {% for exit in saidas %}
-          <tr>
-            <td>{{ exit.plate }}</td>
-            <td>{{ exit.vehicle_type }}</td>
-            <td>{{ exit.exit_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            <td>R$ {{ "%.2f"|format(exit.total_value) }}</td>
-          </tr>
+            <tr>
+              <td>{{ exit.plate }}</td>
+              <td>{{ exit.vehicle_type }}</td>
+              <td>{{ exit.exit_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+              <td>R$ {{ "%.2f"|format(exit.total_value) }}</td>
+            </tr>
+            {% set total_value = total_value + exit.total_value %}
           {% endfor %}
         {% else %}
           <tr>
@@ -147,6 +154,12 @@
         {% endif %}
       </tbody>
     </table>
+
+    {% if saidas %}
+      <div class="total-value">
+        <strong>Total das Saídas:</strong> R$ {{ "%.2f"|format(total_value) }}
+      </div>
+    {% endif %}
   </main>
 </body>
 </html>
