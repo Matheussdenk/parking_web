@@ -13,14 +13,6 @@ app.config.from_object(Config)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# Criação de tabelas e inserção de dados iniciais
-#with app.app_context():
-    #db.create_all()
-    #if not VehicleType.query.filter_by(type='Carro').first():
-        #db.session.add(VehicleType(type='Carro', hour_value=5.0))
-        #db.session.add(VehicleType(type='Moto', hour_value=3.0))
-        #db.session.commit()
-
 # Redirecionamento para login ou dashboard
 @app.route('/')
 def index():
@@ -67,8 +59,6 @@ def register():
         return redirect('/login')
 
     return render_template('register.html')
-
-# (cabeçalhos e imports mantidos como estão)
 
 @app.route('/dashboard')
 def dashboard():
@@ -178,8 +168,13 @@ def saidas():
     user_id = session.get('user_id')
     if not user_id:
         return redirect('/login')
+    
     saidas = Exit.query.filter_by(user_id=user_id).all()
-    return render_template("saidas.html", saidas=saidas)
+
+    # Calculando o valor total das saídas
+    total_value = sum([saida.total_value for saida in saidas])
+
+    return render_template("saidas.html", saidas=saidas, total_value=total_value)
 
 
 @app.route('/saida/personalizada', methods=['POST'])
@@ -246,58 +241,15 @@ def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=Tru
         mimetype='application/pdf'
     )
 
-# Verificação de login
 @app.before_request
 def require_login():
     if not session.get("user_id") and request.endpoint not in ('login', 'register', 'static'):
         return redirect(url_for('login'))
 
-# logout do sistema
 @app.route('/logout')
 def logout():
     session.clear()
-    print("Sessão após logout:", session)  # Debug temporário
     return redirect('/login')
 
-# Histórico de entradas
-#@app.route('/historico/entradas')
-#def historico_entradas():
-    #entries = Entry.query.all()
-    #return render_template('historico_entradas.html', entries=entries)
-
-# Histórico de saídas
-####return render_template("saidas.html", saidas=saidas)
-
-# Saída personalizada
-#@app.route('/saida/personalizada', methods=['POST'])
-#def exit_vehicle_custom():
-    #if 'user_id' not in session:
-        #return redirect('/login')
-
-    plate = request.form['plate'].upper()
-    custom_value = float(request.form['custom_value'])
-    user_id = session['user_id']
-
-    entry = Entry.query.filter_by(plate=plate, user_id=user_id).first()
-    if not entry:
-        flash("Veículo não encontrado no pátio.")
-        return redirect(url_for('dashboard'))
-
-    exit_time = datetime.utcnow()
-    duration = (exit_time - entry.entry_time).total_seconds() / 3600.0
-
-    db.session.add(Exit(
-        plate=plate,
-        exit_time=exit_time,
-        total_value=custom_value,
-        duration=duration,
-        user_id=user_id
-    ))
-    db.session.delete(entry)
-    db.session.commit()
-
-    return generate_pdf_response(plate, exit_time, entry.vehicle_type, total_value=custom_value, entry=False, entry_time=entry.entry_time)
-
-# Inicialização do servidor
 if __name__ == '__main__':
     app.run(debug=True)
