@@ -134,19 +134,40 @@ def exit_vehicle(plate):
     if entry:
         entry_time = entry.entry_time
         exit_time = datetime.utcnow()
-        duration = (exit_time - entry_time).total_seconds() / 3600.0
 
+        # Calculando a duração em horas
+        duration = (exit_time - entry.entry_time).total_seconds() / 3600.0
+
+        # Verificando se o valor por hora está configurado corretamente
         rate = VehicleType.query.filter_by(type=entry.vehicle_type, user_id=user_id).first()
+
         if not rate:
             flash("Valor por hora não configurado.")
             return redirect('/dashboard')
 
+        # Calculando o valor total
         value = rate.hour_value
         total_value = value if duration <= 1 else value + (duration - 1) * value
 
-        db.session.add(Exit(plate=plate, exit_time=exit_time, total_value=total_value, duration=duration, user_id=user_id))
+        # Verificando o valor calculado
+        print(f"Duração: {duration:.2f} horas")
+        print(f"Valor por hora: R$ {value:.2f}")
+        print(f"Valor total calculado: R$ {total_value:.2f}")
+
+        # Registrando a saída no banco de dados
+        saida = Exit(
+            plate=plate,
+            exit_time=exit_time,
+            total_value=total_value,
+            duration=duration,
+            user_id=user_id
+        )
+        
+        db.session.add(saida)
         db.session.delete(entry)
         db.session.commit()
+
+        flash(f"Saída registrada com sucesso! Valor: R$ {total_value:.2f}")
 
         return generate_pdf_response(plate, exit_time, entry.vehicle_type, total_value=total_value, entry=False, entry_time=entry.entry_time)
 
@@ -164,18 +185,23 @@ def entradas():
 
 @app.route("/historico/saidas", endpoint="historico_saidas")
 def saidas():
-    # busca saídas do usuário
     user_id = session.get('user_id')
     if not user_id:
         return redirect('/login')
     
     saidas = Exit.query.filter_by(user_id=user_id).all()
 
+    # Depuração: Verificando todos os valores das saídas
+    print("Saídas encontradas no banco de dados:")
+    for saida in saidas:
+        print(f"Placa: {saida.plate}, Valor: R$ {saida.total_value}")
+
     # Calculando o valor total das saídas
     total_value = sum([saida.total_value for saida in saidas])
 
-    return render_template("saidas.html", saidas=saidas, total_value=total_value)
+    print(f"Valor total das saídas: R$ {total_value:.2f}")
 
+    return render_template("saidas.html", saidas=saidas, total_value=total_value)
 
 @app.route('/saida/personalizada', methods=['POST'])
 def exit_vehicle_custom():
