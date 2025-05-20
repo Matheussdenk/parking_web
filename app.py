@@ -149,12 +149,12 @@ def exit_vehicle(plate):
         value = rate.hour_value
         total_value = value if duration <= 1 else value + (duration - 1) * value
 
-        # Verificando o valor calculado
+        # Debug: Verificar valores calculados
         print(f"Duração: {duration:.2f} horas")
         print(f"Valor por hora: R$ {value:.2f}")
         print(f"Valor total calculado: R$ {total_value:.2f}")
 
-        # Registrando a saída no banco de dados
+        # Registrar a saída no banco de dados
         saida = Exit(
             plate=plate,
             exit_time=exit_time,
@@ -173,6 +173,28 @@ def exit_vehicle(plate):
 
     flash("Placa não encontrada.")
     return redirect('/dashboard')
+
+@app.route("/historico/saidas", endpoint="historico_saidas")
+def saidas():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect('/login')
+
+    # Busca todas as saídas do usuário
+    saidas = Exit.query.filter_by(user_id=user_id).all()
+
+    # Depuração: Verificando todos os valores das saídas
+    print("Saídas encontradas no banco de dados:")
+    for saida in saidas:
+        print(f"Placa: {saida.plate}, Valor: R$ {saida.total_value:.2f}")
+
+    # Calculando o valor total das saídas
+    total_value = sum([saida.total_value for saida in saidas])
+
+    # Depuração: Exibindo o valor total calculado
+    print(f"Valor total das saídas: R$ {total_value:.2f}")
+
+    return render_template("saidas.html", saidas=saidas, total_value=total_value)
 
 @app.route("/historico/entradas", endpoint="historico_entradas")
 def entradas():
