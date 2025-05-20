@@ -174,7 +174,8 @@ def exit_vehicle(plate):
     flash("Placa não encontrada.")
     return redirect('/dashboard')
 
-@app.route("/historico/saidas", endpoint="historico_saidas")
+# Rota para exibir o histórico de saídas
+@app.route("/historico/saidas")
 def saidas():
     user_id = session.get('user_id')
     if not user_id:
