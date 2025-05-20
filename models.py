@@ -9,44 +9,41 @@ class User(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     
-    # Relacionamentos com outras tabelas
     entries = db.relationship('Entry', backref='user', lazy=True)
     exits = db.relationship('Exit', backref='user', lazy=True)
-    config = db.relationship('ConfigData', backref='user', uselist=False)  # Um usuário tem uma configuração única
+    config = db.relationship('ConfigData', backref='user', uselist=False)
     vehicles = db.relationship('VehicleType', backref='user', lazy=True)
 
-# Modelo de Configurações (Cada usuário tem suas próprias configurações)
+# Configurações do Usuário
 class ConfigData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    hour_value = db.Column(db.Float, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
     company_name = db.Column(db.String(100))
-    address = db.Column(db.String(100))
-    city = db.Column(db.String(50))
+    address = db.Column(db.String(150))
+    city = db.Column(db.String(80))
     phone = db.Column(db.String(20))
-    
-    # Relacionamento com o User
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Relacionamento com User
 
-# Modelo de Tipo de Veículo (Cada estacionamento terá seus próprios tipos de veículos)
 class VehicleType(db.Model):
-    __tablename__ = 'vehicle_type'
     id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String(20), unique=True, nullable=False)
-    hour_value = db.Column(db.Float, nullable=False)
+    type = db.Column(db.String(20))
+    hour_value = db.Column(db.Float)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+# Entradas
 class Entry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     plate = db.Column(db.String(10), nullable=False)
     entry_time = db.Column(db.DateTime, default=datetime.utcnow)
     vehicle_type = db.Column(db.String(20), default="Carro")
     
-    # Relacionamento com o User
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Relacionamento com User
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# Modelo de Saída de Veículo (Cada saída será associada ao usuário)
+# Saídas
 class Exit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     plate = db.Column(db.String(10), nullable=False)
     exit_time = db.Column(db.DateTime, default=datetime.utcnow)
     total_value = db.Column(db.Float, nullable=False)
     duration = db.Column(db.Float, nullable=False)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

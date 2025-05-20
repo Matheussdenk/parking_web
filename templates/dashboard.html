@@ -5,7 +5,6 @@
     <title>Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <style>
-        /* Reset básico para consistência */
         *, *::before, *::after {
             margin: 0; padding: 0; box-sizing: border-box;
         }
@@ -15,11 +14,51 @@
             background-color: #f5f7fa;
             color: #333;
             min-height: 100vh;
-            padding: 100px 20px 40px; /* topo para navbar fixa */
+            padding: 100px 20px 40px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+        }
+
+        .navbar {
+            list-style: none;
+            display: flex;
+            background-color: #007bff;
+            padding: 10px 20px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            left: 0;
+            z-index: 1000;
+            justify-content: center;
+        }
+
+        .navbar > li {
+            position: relative;
+            margin: 0 15px;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 12px;
+            display: block;
+        }
+
+        .submenu {
+            display: none;
+            position: absolute;
+            background-color: #007bff;
+            padding: 10px;
+            border-radius: 6px;
+            top: 100%;
+            left: 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .has-submenu:hover .submenu {
+            display: block;
         }
 
         h1, h2 {
@@ -28,44 +67,6 @@
             margin-bottom: 20px;
         }
 
-        .navbar {
-        list-style: none;
-        display: flex;
-        background-color: #007bff;
-        padding: 10px;
-        margin: 0;
-        }
-
-        .navbar > li {
-        position: relative;
-        margin-right: 30px;
-        }
-
-        .navbar a {
-        color: white;
-        text-decoration: none;
-        font-weight: bold;
-        padding: 8px 12px;
-        display: block;
-        }
-
-        .submenu {
-        display: none;
-        position: absolute;
-        background-color: #007bff;
-        padding: 10px;
-        border-radius: 6px;
-        top: 100%;
-        left: 0;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .has-submenu:hover .submenu {
-        display: block;
-        }
-
-
-        /* Container central */
         .container {
             width: 100%;
             max-width: 1200px;
@@ -73,14 +74,15 @@
             padding: 30px 40px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-top: 20px;
         }
 
         form {
             max-width: 400px;
-            margin: 0 auto 40px auto;
-            padding: 25px 30px;
+            margin: 0 auto 40px;
             background-color: #fafafa;
             border-radius: 10px;
+            padding: 25px 30px;
             box-shadow: 0 3px 8px rgba(0,0,0,0.05);
         }
 
@@ -88,7 +90,6 @@
             display: block;
             margin-bottom: 6px;
             font-weight: 600;
-            color: #555;
         }
 
         input[type="text"],
@@ -99,33 +100,29 @@
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 16px;
-            transition: border-color 0.2s ease;
         }
 
-        input[type="text"]:focus,
-        select:focus {
+        input:focus, select:focus {
             border-color: #2ecc71;
             outline: none;
         }
 
         button {
             width: 100%;
-            padding: 12px 0;
+            padding: 12px;
             background-color: #2ecc71;
             color: white;
-            font-weight: 700;
+            font-weight: bold;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
-            transition: background-color 0.3s ease;
         }
 
         button:hover {
             background-color: #27ae60;
         }
 
-        /* Veículos no pátio */
         .vehicle-container {
             display: flex;
             flex-wrap: wrap;
@@ -134,150 +131,160 @@
         }
 
         .vehicle-card {
-            background: white;
+            background: #fff;
             border-radius: 12px;
             padding: 25px 20px;
             width: 250px;
             box-shadow: 0 4px 14px rgba(0,0,0,0.07);
-            text-align: center;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            gap: 12px;
+            align-items: flex-start;
+            gap: 10px;
         }
 
         .vehicle-card strong {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             color: #2c3e50;
         }
 
         .vehicle-card a {
-            margin-top: 12px;
-            text-decoration: none;
+            margin-top: 10px;
             color: #e74c3c;
-            font-weight: 600;
-            transition: color 0.2s ease;
+            font-weight: bold;
+            text-decoration: none;
         }
 
         .vehicle-card a:hover {
             color: #c0392b;
         }
 
-        /* Mensagens de sucesso */
         .message {
             color: #27ae60;
             text-align: center;
             font-weight: 600;
             margin-top: 20px;
-            max-width: 400px;
+        }
+
+        .config-button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
             margin-left: auto;
-            margin-right: auto;
+            color: #007bff;
+        }
+
+        .config-button:hover {
+            color: #0056b3;
+        }
+
+        .custom-value-form input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .custom-value-form button {
+            margin-top: 5px;
+            background-color: #3498db;
+        }
+
+        .custom-value-form button:hover {
+            background-color: #2980b9;
         }
     </style>
 </head>
 <body>
 
-    <ul class="navbar">
+<ul class="navbar">
     <li><a href="#">Dashboard</a></li>
     <li class="has-submenu">
         <a href="#">Histórico ▾</a>
         <ul class="submenu">
-        <li><a href="/historico/entradas">Entradas</a></li>
-        <li><a href="/historico/saidas">Saídas</a></li>
+            <li><a href="/historico/entradas">Entradas</a></li>
+            <li><a href="/historico/saidas">Saídas</a></li>
         </ul>
     </li>
-    <li><a href="#">Configurações</a></li>
-    <li><a href="#">Logout</a></li>
-    </ul>
-</nav>
+    <li><a href="{{ url_for('config') }}">Configurações</a></li>
+    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+
+</ul>
+
+<main class="container">
+    <h1>Estacionamento - Dashboard</h1>
+
+    <section>
+        <h2>Registrar Entrada</h2>
+        <form method="POST" action="{{ url_for('entry') }}">
+            <label for="plate">Placa:</label>
+            <input type="text" id="plate" name="plate" required maxlength="7" autocomplete="off" />
+
+            <label for="vehicle_type">Tipo de Veículo:</label>
+            <select id="vehicle_type" name="vehicle_type">
+                <option value="Carro">Carro</option>
+                <option value="Moto">Moto</option>
+            </select>
+
+            <button type="submit">Registrar Entrada</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Veículos no Pátio</h2>
+        {% if entries %}
+        <div class="vehicle-container">
+            {% for entry in entries %}
+            <article class="vehicle-card" aria-label="Veículo com placa {{ entry.plate }}">
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                    <strong>Placa: {{ entry.plate }}</strong>
+                    <button class="config-button" onclick="toggleCustomForm('{{ entry.plate }}')" title="Definir valor personalizado">⚙️</button>
+                </div>
+
+                {% set total_minutos = ((now - entry.entry_time).total_seconds() // 60) | int %}
+                <strong>Tempo:</strong>
+                {% if total_minutos < 60 %}
+                    {{ total_minutos }} minutos
+                {% else %}
+                    {% set horas = total_minutos // 60 %}
+                    {% set minutos_restantes = total_minutos % 60 %}
+                    {{ horas }}h {% if minutos_restantes > 0 %}{{ minutos_restantes }}min{% endif %}
+                {% endif %}
+
+                <a href="{{ url_for('exit_vehicle', plate=entry.plate) }}">Registrar Saída</a>
+
+                <!-- Formulário oculto -->
+                <form method="POST" action="{{ url_for('exit_vehicle_custom') }}" id="form-{{ entry.plate }}" class="custom-value-form" style="display: none;">
+                    <input type="hidden" name="plate" value="{{ entry.plate }}">
+                    <input type="text" name="custom_value" placeholder="Valor personalizado (R$)">
+                    <button type="submit">Aplicar valor</button>
+                </form>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>Nenhum veículo no pátio.</p>
+        {% endif %}
+    </section>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div class="message" role="alert">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+</main>
+
 <script>
-
-// Fecha submenu ao clicar fora
-document.addEventListener('click', function(event) {
-    const isClickInside = event.target.closest('.has-submenu');
-    if (!isClickInside) {
-        document.querySelectorAll('.has-submenu').forEach(el => el.classList.remove('open'));
-    }
-});
+function toggleCustomForm(plate) {
+    const form = document.getElementById(`form-${plate}`);
+    form.style.display = form.style.display === "none" ? "block" : "none";
+}
 </script>
-
-    <main class="container" role="main">
-        <h1>Estacionamento - Dashboard</h1>
-
-        <section aria-labelledby="registrar-entrada">
-            <h2 id="registrar-entrada">Registrar Entrada</h2>
-            <form method="POST" action="{{ url_for('entry') }}">
-                <label for="plate">Placa:</label>
-                <input type="text" id="plate" name="plate" required maxlength="7" autocomplete="off" />
-                
-                <label for="vehicle_type">Tipo de Veículo:</label>
-                <select id="vehicle_type" name="vehicle_type" aria-describedby="vehicleTypeDesc">
-                    <option value="Carro">Carro</option>
-                    <option value="Moto">Moto</option>
-                </select>
-
-                <button type="submit">Registrar Entrada</button>
-            </form>
-        </section>
-
-        <section aria-labelledby="veiculos-patio">
-            <h2 id="veiculos-patio">Veículos no Pátio</h2>
-            {% if entries %}
-                <div class="vehicle-container">
-                    {% for entry in entries %}
-                        <article class="vehicle-card" role="region" aria-label="Veículo com placa {{ entry.plate }}">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <strong>Placa:</strong> {{ entry.plate }}
-                                <button onclick="toggleCustomForm('{{ entry.plate }}')" 
-                                        style="background: none; border: none; font-size: 18px; cursor: pointer;" 
-                                        title="Definir valor personalizado">⚙️</button>
-                            </div>
-                            {% set total_minutos = ((now - entry.entry_time).total_seconds() // 60) | int %}
-                            <strong>Tempo:</strong>
-                            {% if total_minutos < 60 %}
-                                {{ total_minutos }} minutos
-                            {% else %}
-                                {% set horas = total_minutos // 60 %}
-                                {% set minutos_restantes = total_minutos % 60 %}
-                                {{ horas }}h {% if minutos_restantes > 0 %}{{ minutos_restantes }}min{% endif %}
-                            {% endif %}
-                            <br />
-
-
-                            <a href="{{ url_for('exit_vehicle', plate=entry.plate) }}">Registrar Saída</a>
-
-                            <!-- Formulário oculto para valor personalizado -->
-                            <form method="POST" action="{{ url_for('exit_vehicle_custom') }}" 
-                                id="form-{{ entry.plate }}" style="display: none; margin-top: 10px;">
-                                <input type="hidden" name="plate" value="{{ entry.plate }}">
-                                <input type="text" name="custom_value" placeholder="Valor personalizado (R$)" 
-                                    style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 100%; margin-bottom: 5px;">
-                                <button type="submit" style="background-color: #3498db;">Aplicar valor</button>
-                            </form>
-                        </article>
-                    {% endfor %}
-
-                </div>
-            {% else %}
-                <p>Nenhum veículo no pátio.</p>
-            {% endif %}
-        </section>
-
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="message" role="alert">
-                    {% for message in messages %}
-                        <p>{{ message }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-    </main>
-    <script>
-    function toggleCustomForm(plate) {
-        const form = document.getElementById(`form-${plate}`);
-        form.style.display = form.style.display === "none" ? "block" : "none";
-    }
-    </script>
 </body>
 </html>
