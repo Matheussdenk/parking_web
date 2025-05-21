@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Histórico de Saídas</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+    }
+    nav {
+      background-color: #3a86ff;
+      padding: 10px 0;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin: 0;
+      padding: 0;
+    }
+    nav li {
+      position: relative;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 8px 15px;
+      display: block;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+    nav a:hover {
+      background-color: #265ddc;
+    }
+    /* Dropdown */
+    nav li.dropdown:hover > ul {
+      display: block;
+    }
+    nav ul ul {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background-color: #3a86ff;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      min-width: 150px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+      z-index: 10;
+    }
+    nav ul ul li a {
+      font-weight: 400;
+      padding: 8px 15px;
+    }
+    nav ul ul li a:hover {
+      background-color: #265ddc;
+    }
+    main.content {
+      flex: 1;
+      max-width: 700px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    main.content h2 {
+      margin-bottom: 25px;
+      color: #444;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 12px 15px;
+      text-align: center;
+    }
+    th {
+      background-color: #3a86ff;
+      color: #fff;
+      font-weight: 700;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    tr:hover {
+      background-color: #e8e8e8;
+    }
+    .total-value {
+      font-weight: 700;
+      font-size: 1.2em;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <ul>
+      <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+      <li class="dropdown">
+        <a href="javascript:void(0)">Histórico</a>
+        <ul>
+          <li><a href="{{ url_for('historico_entradas') }}">Entradas</a></li>
+          <li><a href="{{ url_for('historico_saidas') }}">Saídas</a></li>
+        </ul>
+      </li>
+      <li><a href="{{ url_for('logout') }}">Sair</a></li>
+    </ul>
+  </nav>
+
+  <main class="content">
+    <h2>Histórico de Saídas</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Placa</th>
+          <th>Tipo</th>
+          <th>Data/Hora de Saída</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if saidas %}
+          {% set total_value = 0 %}
+          {% for exit in saidas %}
+            <tr>
+              <td>{{ exit.plate }}</td>
+              <td>{{ exit.vehicle_type }}</td>
+              <td>{{ exit.exit_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+              <td>R$ {{ "%.2f"|format(exit.total_value) }}</td>
+            </tr>
+            {% set total_value = total_value + exit.total_value %}
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="4">Nenhum registro encontrado.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {% if saidas %}
+      <div class="total-value">
+        <strong>Total das Saídas:</strong> R$ {{ "%.2f"|format(total_value) }}
+      </div>
+    {% endif %}
+  </main>
+</body>
+</html>

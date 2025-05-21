@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ 'Editar' if user else 'Novo' }} Usuário</h2>
+    <form method="post">
+        <div class="mb-3">
+            <label for="username">Nome de Usuário</label>
+            <input type="text" name="username" class="form-control" value="{{ user.username if user else '' }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="password">Senha {{ ' (deixe em branco para manter)' if user else '' }}</label>
+            <input type="password" name="password" class="form-control" {{ 'required' if not user else '' }}>
+        </div>
+        <div class="form-check mb-3">
+            <input type="checkbox" name="is_admin" class="form-check-input" {% if user and user.is_admin %}checked{% endif %}>
+            <label class="form-check-label">Administrador</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </form>
+</div>
+{% endblock %}

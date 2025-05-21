@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Cadastrar Novo Usuário</h2>
+<form method="POST">
+    <label>Nome de usuário:</label><br>
+    <input type="text" name="username"><br><br>
+
+    <label>Senha:</label><br>
+    <input type="password" name="password"><br><br>
+
+    <label><input type="checkbox" name="is_admin"> Administrador</label><br><br>
+
+    <button type="submit">Cadastrar</button>
+</form>
+<a href="{{ url_for('dashboard') }}">Voltar</a>
+{% endblock %}
