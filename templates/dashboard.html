@@ -76,20 +76,42 @@
             font-size: 28px;
             cursor: pointer;
             color: white;
+            z-index: 2000;
         }
 
+        /* Menu móvel */
         .navbar-mobile {
             display: none;
             flex-direction: column;
-            background-color: #007bff;
+            background-color: #003366;
             width: 100%;
+            position: absolute;
+            top: 50px;
+            left: 0;
+            z-index: 1000;
+            padding: 20px 0;
         }
 
+        /* Itens do menu móvel */
         .navbar-mobile li {
             text-align: center;
             border-top: 1px solid rgba(255,255,255,0.2);
         }
 
+        .navbar-mobile a {
+            color: white;
+            font-size: 20px;
+            padding: 12px 20px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .navbar-mobile a:hover {
+            background-color: #004d99;
+            color: #fff;
+        }
+
+        /* Exibição do menu */
         @media (max-width: 768px) {
             .navbar {
                 display: none;
@@ -97,6 +119,7 @@
 
             .menu-toggle {
                 display: block;
+                color: blue;
             }
 
             .navbar-mobile {
@@ -109,6 +132,7 @@
             color: #0080ff;
             text-align: center;
             margin-bottom: 20px;
+            font-size: 1.5rem; /* Ajusta o tamanho do título para dispositivos móveis */
         }
 
         .container {
@@ -168,10 +192,10 @@
         }
 
         .vehicle-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Colunas responsivas */
             gap: 25px;
+            justify-items: center;
         }
 
         .vehicle-card {
