@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsividade -->
+    <title>Painel de Administração</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Garantir que o body e html ocupem toda a altura da tela */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; /* Impede a rolagem horizontal */
+        }
+
+        /* Estilo geral da página */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fa;
+        }
+
+        /* Container centralizado com rolagem interna */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto; /* Habilita a rolagem vertical */
+            height: 100%; /* Garante que o conteúdo ocupe toda a altura da tela */
+        }
+
+        /* Barra de pesquisa */
+        .search-bar input {
+            padding: 8px;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Flash message */
+        .flash {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Estilo dos cartões */
+        .user-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .user-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: left;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            width: 30%;
+            min-width: 250px;
+            max-width: 320px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start;
+            height: auto; /* Ajusta a altura do card */
+        }
+
+        /* Ajuste no estilo das informações dentro do card */
+        .user-card strong {
+            display: inline-block;
+            margin-right: 8px;  /* Ajuste do espaço entre nome da informação e seu valor */
+            font-weight: bold;
+        }
+
+        .user-card span {
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+
+        .user-card .btn-edit, .user-card .btn-delete {
+            margin-top: 10px;
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .user-card .btn-edit {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .user-card .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        /* Responsividade para telas maiores que 1024px */
+        @media (max-width: 1024px) {
+            .user-card {
+                width: 45%; /* Ajusta para 2 colunas */
+            }
+        }
+
+        /* Responsividade para telas menores que 768px */
+        @media (max-width: 768px) {
+            .user-card {
+                width: 100%; /* Ajusta para 1 coluna */
+            }
+        }
+
+        /* Estilo dos botões de ação (voltar e cadastro) */
+        .btn-exit, .btn-primary {
+            padding: 10px 15px;
+            font-size: 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Painel de Administração</h1>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash">{{ messages[0] }}</div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Barra de Pesquisa -->
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Buscar usuário...">
+        </div>
+
+        <h2>Usuários Registrados</h2>
+
+        <!-- Exibindo os usuários em 3 colunas -->
+        <div class="user-list">
+            {% for user in users %}
+                <div class="user-card">
+                    <span><strong>Nome:</strong> {{ user.username }}</span>
+                    <span><strong>ID:</strong> {{ user.id }}</span>
+                    <span><strong>Data de Criação:</strong> 
+                        {% if user.created_at %}
+                            {{ user.created_at.strftime('%d/%m/%Y') }}
+                        {% else %}
+                            Não disponível
+                        {% endif %}
+                    </span>
+
+                    <!-- Botões de Ação -->
+                    <a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="btn-edit">Editar</a>
+                    <a href="{{ url_for('deletar_usuario', user_id=user.id) }}" class="btn-delete">Excluir</a>
+                </div>
+            {% endfor %}
+        </div>
+
+        <hr>
+
+        <!-- Formulário para Cadastrar Novo Usuário -->
+        <h2>Cadastrar Novo Usuário</h2>
+        <form method="POST" action="{{ url_for('criar_usuario') }}">
+            <input type="text" name="username" placeholder="Nome do usuário" required>
+            <input type="password" name="password" placeholder="Senha" required>
+            <button type="submit" class="btn-primary">Cadastrar</button>
+        </form>
+
+        <br>
+        <a class="btn-exit" href="{{ url_for('admin_painel') }}">Voltar ao Painel</a>
+    </div>
+
+    <!-- Javascript para Filtro de Pesquisa -->
+    <script>
+        const searchInput = document.getElementById("search");
+        searchInput.addEventListener("input", function () {
+            const query = searchInput.value.toLowerCase();
+            const userCards = document.querySelectorAll(".user-card");
+
+            userCards.forEach(function (card) {
+                const username = card.querySelector("strong").textContent.toLowerCase();
+                if (username.includes(query)) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        });
+    </script>
+</body>
+</html>

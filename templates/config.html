@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8" />
+    <title>config</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <style>
+        /* Seu CSS mantido, sem alterações */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .config-container {
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 480px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #007bff;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        form input[type="text"],
+        form input[type="tel"],
+        form input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        form input[type="text"]:focus,
+        form input[type="tel"]:focus,
+        form input[type="number"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container" role="main" aria-label="Configurações do sistema">
+        <h1>Configurações</h1>
+        <form method="post" action="{{ url_for('config') }}" novalidate>
+            <label for="company_name">Nome da Empresa:</label>
+            <input
+                type="text"
+                id="company_name"
+                name="company_name"
+                value="{{ config.company_name if config else '' }}"
+                placeholder="Digite o nome da empresa"
+                required
+                maxlength="100"
+            >
+
+            <label for="address">Endereço:</label>
+            <input
+                type="text"
+                id="address"
+                name="address"
+                value="{{ config.address if config else '' }}"
+                placeholder="Digite o endereço"
+                maxlength="150"
+            >
+
+            <label for="city">Cidade:</label>
+            <input
+                type="text"
+                id="city"
+                name="city"
+                value="{{ config.city if config else '' }}"
+                placeholder="Digite a cidade"
+                maxlength="80"
+            >
+
+            <label for="phone">Telefone:</label>
+            <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value="{{ config.phone if config else '' }}"
+                placeholder="(xx) xxxx-xxxx"
+                pattern="^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$"
+                title="Formato esperado: (XX) XXXX-XXXX ou (XX) XXXXX-XXXX"
+            >
+
+            <label for="carro_value">Valor por Hora - Carro (R$):</label>
+            <input
+                type="number"
+                id="carro_value"
+                name="carro_value"
+                required
+                min="0"
+                step="0.01"
+                placeholder="Exemplo: 5.00"
+                value="{{ config.carro_value if config else '' }}"
+            >
+
+            <label for="moto_value">Valor por Hora - Moto (R$):</label>
+            <input
+                type="number"
+                id="moto_value"
+                name="moto_value"
+                required
+                min="0"
+                step="0.01"
+                placeholder="Exemplo: 3.00"
+                value="{{ config.moto_value if config else '' }}"
+            >
+
+            <button type="submit" aria-label="Salvar configurações">Salvar Configurações</button>
+        </form>
+
+        <div class="back-link">
+            <a href="{{ url_for('dashboard') }}" aria-label="Voltar ao painel">← Voltar ao Painel</a>
+        </div>
+    </div>
+</body>
+</html>

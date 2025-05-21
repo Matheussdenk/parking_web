@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Usuário</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Editar Usuário: {{ user.username }}</h1>
+
+        <!-- Exibe mensagens de flash -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash">{{ messages[0] }}</div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('editar_usuario', user_id=user.id) }}">
+            <div>
+                <label for="username">Nome de Usuário:</label>
+                <input type="text" id="username" name="username" value="{{ user.username }}" required>
+            </div>
+            <div>
+                <label for="password">Nova Senha:</label>
+                <input type="password" id="password" name="password" placeholder="Deixe em branco se não quiser alterar">
+            </div>
+            <div>
+                <label for="is_admin">
+                    <input type="checkbox" id="is_admin" name="is_admin" {% if user.is_admin %}checked{% endif %}>
+                    Usuário Administrador
+                </label>
+            </div>
+            <div>
+                <label for="is_active">
+                    <input type="checkbox" id="is_active" name="is_active" {% if user.is_active %}checked{% endif %}>
+                    Usuário Ativo
+                </label>
+            </div>
+
+            <button type="submit">Salvar Alterações</button>
+        </form>
+
+        <br>
+        <a href="{{ url_for('admin_painel') }}">Voltar ao Painel</a>
+    </div>
+</body>
+</html>
