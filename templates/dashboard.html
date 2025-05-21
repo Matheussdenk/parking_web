@@ -76,42 +76,20 @@
             font-size: 28px;
             cursor: pointer;
             color: white;
-            z-index: 2000;
         }
 
-        /* Menu móvel */
         .navbar-mobile {
             display: none;
             flex-direction: column;
-            background-color: #003366;
+            background-color: #007bff;
             width: 100%;
-            position: absolute;
-            top: 50px;
-            left: 0;
-            z-index: 1000;
-            padding: 20px 0;
         }
 
-        /* Itens do menu móvel */
         .navbar-mobile li {
             text-align: center;
             border-top: 1px solid rgba(255,255,255,0.2);
         }
 
-        .navbar-mobile a {
-            color: white;
-            font-size: 20px;
-            padding: 12px 20px;
-            text-decoration: none;
-            display: block;
-        }
-
-        .navbar-mobile a:hover {
-            background-color: #004d99;
-            color: #fff;
-        }
-
-        /* Exibição do menu */
         @media (max-width: 768px) {
             .navbar {
                 display: none;
@@ -119,7 +97,6 @@
 
             .menu-toggle {
                 display: block;
-                color: blue;
             }
 
             .navbar-mobile {
@@ -132,7 +109,6 @@
             color: #0080ff;
             text-align: center;
             margin-bottom: 20px;
-            font-size: 1.5rem; /* Ajusta o tamanho do título para dispositivos móveis */
         }
 
         .container {
@@ -145,16 +121,9 @@
             margin-top: 20px;
         }
 
-        .button-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
         form {
             max-width: 400px;
-            margin: 0 auto;
+            margin: 0 auto 40px;
             background-color: #fafafa;
             border-radius: 10px;
             padding: 25px 30px;
@@ -199,10 +168,10 @@
         }
 
         .vehicle-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Colunas responsivas */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 25px;
-            justify-items: center;
         }
 
         .vehicle-card {
@@ -302,33 +271,21 @@
 <main class="container">
     <h1>Estacionamento - Dashboard</h1>
 
-    <div class="button-container">
-        <section>
-            <h2>Registrar Entrada</h2>
-            <form method="POST" action="{{ url_for('entry') }}">
-                <label for="plate">Placa:</label>
-                <input type="text" id="plate" name="plate" required maxlength="7" autocomplete="off" />
+    <section>
+        <h2>Registrar Entrada</h2>
+        <form method="POST" action="{{ url_for('entry') }}">
+            <label for="plate">Placa:</label>
+            <input type="text" id="plate" name="plate" required maxlength="7" autocomplete="off" />
 
-                <label for="vehicle_type">Tipo de Veículo:</label>
-                <select id="vehicle_type" name="vehicle_type">
-                    <option value="Carro">Carro</option>
-                    <option value="Moto">Moto</option>
-                </select>
+            <label for="vehicle_type">Tipo de Veículo:</label>
+            <select id="vehicle_type" name="vehicle_type">
+                <option value="Carro">Carro</option>
+                <option value="Moto">Moto</option>
+            </select>
 
-                <button type="submit">Registrar Entrada</button>
-            </form>
-        </section>
-
-        <section>
-            <h2>Registrar Saída</h2>
-            <form method="POST" action="{{ url_for('exit') }}">
-                <label for="exit_plate">Placa do Veículo:</label>
-                <input type="text" id="exit_plate" name="exit_plate" required maxlength="7" autocomplete="off" />
-
-                <button type="submit">Registrar Saída</button>
-            </form>
-        </section>
-    </div>
+            <button type="submit">Registrar Entrada</button>
+        </form>
+    </section>
 
     <section>
         <h2>Veículos no Pátio</h2>
