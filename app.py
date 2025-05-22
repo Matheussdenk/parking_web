@@ -1,29 +1,42 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from models import db, User, ConfigData, Entry, Exit, VehicleType
-from models import User  # Supondo que o modelo User esteja no arquivo models.py
 from config import Config
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from flask_migrate import Migrate
+from forms import RevendaRegisterForm
+from flask_login import LoginManager, login_user, login_required, current_user, logout_user, UserMixin
+from flask import send_file
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Inicialização do Flask-Login
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'  # Rota de login, para redirecionamento quando não autenticado
+
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# Redirecionamento para login ou dashboard
+# Função para carregar o usuário no Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 @app.route('/')
 def index():
-    if 'user_id' in session:
+    if current_user.is_authenticated:
         return redirect('/dashboard')
     return redirect('/login')
 
-# Login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect('/dashboard')
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -34,16 +47,24 @@ def login():
                 flash("Seu usuário está inativo. Contate o administrador.", "danger")
                 return redirect('/login')
 
-            session['user_id'] = user.id
+            login_user(user)
             return redirect('/dashboard')
 
         flash('Usuário ou senha inválidos.', 'danger')
 
     return render_template('login.html')
 
-# Registro
+@app.route('/logout')
+def logout():
+    logout_user()  # Utilizando o logout do Flask-Login
+    flash('Você foi desconectado.')
+    return redirect('/login')
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect('/dashboard')
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -63,133 +84,163 @@ def register():
 
     return render_template('register.html')
 
+@app.route('/cadastrar_revenda', methods=['GET', 'POST'])
+@login_required
+def cadastrar_revenda():
+    if current_user.tipo != 'admin':
+        flash("Acesso negado. Somente administradores podem cadastrar revendas.")
+        return redirect(url_for('index'))
+
+    form = RevendaRegisterForm()
+    if request.method == 'POST' and form.validate():
+        nova_revenda = User(
+            username=form.username.data,
+            password=generate_password_hash(form.password.data),
+            tipo='revenda',
+            is_active=True,
+            nome=form.nome.data,
+            telefone=form.telefone.data,
+            email=form.email.data,
+            cpf_cnpj=form.cpf_cnpj.data,
+            endereco=form.endereco.data
+        )
+        db.session.add(nova_revenda)
+        db.session.commit()
+        flash('Revenda cadastrada com sucesso!')
+        return redirect(url_for('admin_painel'))
+
+    return render_template('cadastrar_revenda.html', form=form)
+
 @app.route('/dashboard')
+@login_required
 def dashboard():
-    if 'user_id' not in session:
-        return redirect('/login')
-    user_id = session['user_id']
-    entries = Entry.query.filter_by(user_id=user_id).all()
+    entries = Entry.query.filter_by(user_id=current_user.id).all()
     now_time = datetime.utcnow()
     return render_template('dashboard.html', entries=entries, now=now_time)
 
-@app.route('/admin/painel')
+@app.route('/admin/painel', methods=['GET', 'POST'])
+@login_required
 def admin_painel():
-    user_id = session.get('user_id')
-    print("Usuário ID na sessão:", user_id)
-
-    if not user_id:
-        flash("Sessão expirada.")
-        return redirect('/login')
-
-    user = User.query.get(user_id)
-    print("Usuário encontrado:", user.username if user else "Nenhum")
-    print("É admin?", user.is_admin if user else "N/A")
-
-    if not user or not user.is_admin:
-        flash("Acesso restrito a administradores.")
+    if current_user.tipo not in ['admin', 'revenda']:
+        flash("Acesso restrito a administradores e revendas.")
         return redirect('/dashboard')
 
-    users = User.query.all()
-    return render_template('admin_painel.html', users=users)
+    if request.method == 'POST':
+        form_type = request.form.get('form_type')
 
-@app.route('/admin/usuarios/criar', methods=['POST'])
-def criar_usuario():
-    username = request.form['username']
-    password = request.form['password']
-    
-    # Verifique se o nome de usuário já existe
-    existing_user = User.query.filter_by(username=username).first()
-    if existing_user:
-        flash("O nome de usuário já está em uso. Escolha outro.")
-        return redirect('/admin/painel')
-    
-    # Crie o novo usuário
-    new_user = User(username=username, password=generate_password_hash(password), is_admin=False)
-    
-    # Adicione e commit
-    db.session.add(new_user)
-    db.session.commit()
+        if current_user.tipo == 'revenda' and form_type != 'usuario_comum':
+            flash("Revendas só podem cadastrar usuários comuns.")
+            return redirect(url_for('admin_painel'))
 
-    flash("Usuário criado com sucesso.")
-    return redirect('/admin/painel')
+        if form_type == 'usuario_comum':
+            username = request.form['username']
+            password = request.form['password']
+            novo = User(
+                username=username,
+                password=generate_password_hash(password),
+                tipo='comum',
+                revenda_id=current_user.id if current_user.tipo == 'revenda' else None
+            )
+            db.session.add(novo)
+            db.session.commit()
+            flash("Usuário comum criado com sucesso!")
+
+        elif form_type == 'revenda' and current_user.tipo == 'admin':
+            username = request.form['username']
+            password = request.form['password']
+            novo = User(
+                username=username,
+                password=generate_password_hash(password),
+                tipo='revenda',
+                nome=request.form['nome'],
+                telefone=request.form['telefone'],
+                email=request.form['email'],
+                cpf_cnpj=request.form['cpf_cnpj'],
+                endereco=request.form['endereco'],
+                cidade=request.form['cidade'],
+                uf=request.form['uf']
+            )
+            db.session.add(novo)
+            db.session.commit()
+            flash("Revenda criada com sucesso!")
+
+        return redirect(url_for('admin_painel'))
+
+    if current_user.tipo == 'admin':
+        users = User.query.order_by(User.id).all()
+    else:
+        users = User.query.filter_by(revenda_id=current_user.id).order_by(User.id).all()
+
+    return render_template(
+        'admin_painel.html',
+        users=users,
+        current_user=current_user
+    )
 
 @app.route('/admin/usuarios/editar/<int:user_id>', methods=['GET', 'POST'])
+@login_required
 def editar_usuario(user_id):
-    current_user = User.query.get(session.get('user_id'))  # Verifica se o usuário está logado e se é admin
-    if not current_user or not current_user.is_admin:
-        flash("Acesso não autorizado.")
-        return redirect('/dashboard')
-
-    user = User.query.get(user_id)  # Busca o usuário a ser editado
+    user = User.query.get(user_id)
     if not user:
         flash("Usuário não encontrado.")
         return redirect('/admin/painel')
 
+    if current_user.tipo not in ['admin', 'revenda']:
+        flash("Acesso não autorizado. Somente administradores ou revendas podem editar usuários.")
+        return redirect('/dashboard')
+
     if request.method == 'POST':
-        new_username = request.form['username']
-        
-        # Verifica se o novo nome de usuário já existe e não é o mesmo do usuário atual
-        existing_user = User.query.filter_by(username=new_username).first()
-        if existing_user and existing_user.id != user.id:
-            flash("O nome de usuário já está em uso. Escolha outro.")
-            return redirect(url_for('editar_usuario', user_id=user.id))
+        username = request.form['username']
+        password = request.form['password']
+        nome = request.form['nome']
+        telefone = request.form['telefone']
+        email = request.form['email']
+        cpf_cnpj = request.form['cpf_cnpj']
+        endereco = request.form['endereco']
+        cidade = request.form['cidade']
+        uf = request.form['uf']
 
-        # Atualiza o nome de usuário
-        user.username = new_username
+        if password:
+            user.password = generate_password_hash(password)
         
-        # Atualiza a senha, se fornecida
-        if request.form['password']:
-            user.password = generate_password_hash(request.form['password'])
-        
-        # Atualiza o status de administrador
-        user.is_admin = True if request.form.get('is_admin') == 'on' else False
-        
-        # Atualiza o status de ativação/desativação
-        user.is_active = True if request.form.get('is_active') == 'on' else False
+        user.username = username
+        user.nome = nome
+        user.telefone = telefone
+        user.email = email
+        user.cpf_cnpj = cpf_cnpj
+        user.endereco = endereco
+        user.cidade = cidade
+        user.uf = uf
 
-        # Salva as alterações no banco de dados
         db.session.commit()
-        flash("Usuário atualizado com sucesso.")
+
+        flash("Usuário atualizado com sucesso!")
         return redirect('/admin/painel')
 
     return render_template('editar_usuario.html', user=user)
 
 @app.route('/admin/usuarios/deletar/<int:user_id>', methods=['POST'])
+@login_required
 def deletar_usuario(user_id):
-    current_user = User.query.get(session.get('user_id'))
-    if not current_user or not current_user.is_admin:
-        flash("Acesso não autorizado.")
-        return redirect('/dashboard')
-
     user_to_delete = User.query.get(user_id)
     if not user_to_delete:
         flash("Usuário não encontrado.")
         return redirect('/admin/painel')
 
-    # Excluindo o usuário
+    if current_user.id == user_to_delete.id:
+        flash("Você não pode excluir a sua própria conta.")
+        return redirect('/admin/painel')
+
     db.session.delete(user_to_delete)
     db.session.commit()
 
-    # Reindexando os IDs após exclusão
-    try:
-        db.session.execute(text("""
-            WITH updated AS (
-                SELECT id, row_number() OVER (ORDER BY id) AS new_id
-                FROM "user"
-            )
-            UPDATE "user" u
-            SET id = updated.new_id
-            FROM updated
-            WHERE u.id = updated.id;
-        """))
-        db.session.commit()
-
-        flash("Usuário excluído com sucesso e IDs reindexados.")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Erro ao reindexar os IDs: {str(e)}")
-
+    flash("Usuário excluído com sucesso.")
     return redirect('/admin/painel')
+
+@app.before_request
+def require_login():
+    if not current_user.is_authenticated and request.endpoint not in ('login', 'register', 'static'):
+        return redirect(url_for('login'))
 
 @app.route('/config', methods=['GET', 'POST'])
 def config():
@@ -296,29 +347,6 @@ def exit_vehicle(plate):
     flash("Placa não encontrada.")
     return redirect('/dashboard')
 
-# Rota para exibir o histórico de saídas
-@app.route("/historico/saidas")
-def saidas():
-    user_id = session.get('user_id')
-    if not user_id:
-        return redirect('/login')
-
-    # Busca todas as saídas do usuário
-    saidas = Exit.query.filter_by(user_id=user_id).all()
-
-    # Depuração: Verificando todos os valores das saídas
-    print("Saídas encontradas no banco de dados:")
-    for saida in saidas:
-        print(f"Placa: {saida.plate}, Valor: R$ {saida.total_value:.2f}")
-
-    # Calculando o valor total das saídas
-    total_value = sum([saida.total_value for saida in saidas])
-
-    # Depuração: Exibindo o valor total calculado
-    print(f"Valor total das saídas: R$ {total_value:.2f}")
-
-    return render_template("saidas.html", saidas=saidas, total_value=total_value)
-
 @app.route("/historico/entradas", endpoint="historico_entradas")
 def entradas():
     # busca entradas do usuário
@@ -411,11 +439,6 @@ def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=Tru
 def require_login():
     if not session.get("user_id") and request.endpoint not in ('login', 'register', 'static'):
         return redirect(url_for('login'))
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/login')
 
 if __name__ == '__main__':
     app.run(debug=True)

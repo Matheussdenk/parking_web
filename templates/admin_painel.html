@@ -1,139 +1,29 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsividade -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Painel de Administração</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <style>
-        /* Garantir que o body e html ocupem toda a altura da tela */
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden; /* Impede a rolagem horizontal */
-        }
-
-        /* Estilo geral da página */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7fa;
-        }
-
-        /* Container centralizado com rolagem interna */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto; /* Habilita a rolagem vertical */
-            height: 100%; /* Garante que o conteúdo ocupe toda a altura da tela */
-        }
-
-        /* Barra de pesquisa */
-        .search-bar input {
-            padding: 8px;
-            width: 100%;
-            max-width: 300px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            display: block;
-            margin: 0 auto;
-        }
-
-        /* Flash message */
-        .flash {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        /* Estilo dos cartões */
-        .user-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .user-card {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            text-align: left;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            font-size: 14px;
-            width: 30%;
-            min-width: 250px;
-            max-width: 320px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: flex-start;
-            height: auto; /* Ajusta a altura do card */
-        }
-
-        /* Ajuste no estilo das informações dentro do card */
-        .user-card strong {
-            display: inline-block;
-            margin-right: 8px;  /* Ajuste do espaço entre nome da informação e seu valor */
-            font-weight: bold;
-        }
-
-        .user-card span {
-            display: inline-block;
-            margin-bottom: 5px;
-        }
-
-        .user-card .btn-edit, .user-card .btn-delete {
-            margin-top: 10px;
-            padding: 6px 12px;
-            font-size: 12px;
-            border-radius: 4px;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .user-card .btn-edit {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .user-card .btn-delete {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        /* Responsividade para telas maiores que 1024px */
-        @media (max-width: 1024px) {
-            .user-card {
-                width: 45%; /* Ajusta para 2 colunas */
-            }
-        }
-
-        /* Responsividade para telas menores que 768px */
-        @media (max-width: 768px) {
-            .user-card {
-                width: 100%; /* Ajusta para 1 coluna */
-            }
-        }
-
-        /* Estilo dos botões de ação (voltar e cadastro) */
-        .btn-exit, .btn-primary {
-            padding: 10px 15px;
-            font-size: 16px;
-            text-decoration: none;
-            border-radius: 4px;
-            background-color: #007bff;
-            color: white;
-        }
-
+        html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-family: Arial, sans-serif; background-color: #f4f7fa; }
+        .container { max-width:1200px; margin:0 auto; padding:20px; height:100%; overflow-y:auto; }
+        .search-bar input { padding:8px; width:100%; max-width:300px; margin:0 auto 20px; border-radius:4px; border:1px solid #ccc; display:block; font-size:16px; }
+        .flash { background:#f8d7da; color:#721c24; padding:10px; border-radius:5px; margin-bottom:20px; text-align:center; }
+        .user-list { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; }
+        .user-card { background:#fff; border:1px solid #ddd; border-radius:8px; padding:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1); width:30%; min-width:250px; max-width:320px; display:flex; flex-direction:column; justify-content:space-between; }
+        .user-card strong { font-weight:bold; }
+        .user-card span { display:block; margin-bottom:5px; }
+        .btn-edit, .btn-delete, .btn-primary, .btn-exit { cursor:pointer; border:none; border-radius:4px; text-decoration:none; color:#fff; text-align:center; }
+        .btn-edit { background:#007bff; padding:6px 12px; font-size:12px; margin-top:10px; display:inline-block; }
+        .btn-delete { background:#dc3545; padding:6px 12px; font-size:12px; margin-top:10px; display:inline-block; }
+        .btn-primary, .btn-exit { background:#007bff; padding:10px 15px; font-size:16px; margin-right:10px; display:inline-block; }
+        @media (max-width:1024px){ .user-card{ width:45%; } }
+        @media (max-width:768px){ .user-card{ width:100%; } }
+        form input, form button { display:block; width:100%; margin-bottom:10px; padding:8px; font-size:14px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px; }
+        form button { background:#007bff; color:#fff; cursor:pointer; transition:background-color .3s; }
+        form button:hover { background:#0056b3; }
     </style>
 </head>
 <body>
@@ -146,64 +36,99 @@
             {% endif %}
         {% endwith %}
 
-        <!-- Barra de Pesquisa -->
         <div class="search-bar">
-            <input type="text" id="search" placeholder="Buscar usuário...">
+            <input type="text" id="search" placeholder="Buscar usuário..." autocomplete="off" />
         </div>
 
         <h2>Usuários Registrados</h2>
-
-        <!-- Exibindo os usuários em 3 colunas -->
         <div class="user-list">
-            {% for user in users %}
+            {% for u in users %}
                 <div class="user-card">
-                    <span><strong>Nome:</strong> {{ user.username }}</span>
-                    <span><strong>ID:</strong> {{ user.id }}</span>
-                    <span><strong>Data de Criação:</strong> 
-                        {% if user.created_at %}
-                            {{ user.created_at.strftime('%d/%m/%Y') }}
+                    <span><strong>Nome:</strong> {{ u.username }}</span>
+                    <span><strong>ID:</strong> {{ u.id }}</span>
+                    <span><strong>Data de Criação:</strong>
+                        {% if u.created_at %}
+                            {{ u.created_at.strftime('%d/%m/%Y') }}
                         {% else %}
                             Não disponível
                         {% endif %}
                     </span>
-
-                    <!-- Botões de Ação -->
-                    <a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="btn-edit">Editar</a>
-                    <a href="{{ url_for('deletar_usuario', user_id=user.id) }}" class="btn-delete">Excluir</a>
+                    <a href="{{ url_for('editar_usuario', user_id=u.id) }}" class="btn-edit" role="button">Editar</a>
+                    
+                    <!-- Formulário de exclusão (POST) -->
+                    <form action="{{ url_for('deletar_usuario', user_id=u.id) }}" method="POST" 
+                          onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+                        <button type="submit" class="btn-delete">Excluir</button>
+                    </form>
                 </div>
             {% endfor %}
         </div>
 
-        <hr>
+        <hr />
 
-        <!-- Formulário para Cadastrar Novo Usuário -->
-        <h2>Cadastrar Novo Usuário</h2>
-        <form method="POST" action="{{ url_for('criar_usuario') }}">
-            <input type="text" name="username" placeholder="Nome do usuário" required>
-            <input type="password" name="password" placeholder="Senha" required>
-            <button type="submit" class="btn-primary">Cadastrar</button>
+        <!-- Botões para abrir os formulários -->
+        <button id="btnNovoUsuario" class="btn-primary" type="button">Criar Novo Usuário</button>
+
+        {# Só exibe para administradores #}
+        {% if current_user.tipo == 'admin' %}
+            <button id="btnNovaRevenda" class="btn-primary" type="button">Criar Nova Revenda</button>
+        {% endif %}
+
+        <!-- Formulário para novo usuário -->
+        <form id="formNovoUsuario" method="POST" action="{{ url_for('admin_painel') }}"
+              style="display:none; margin-top:20px;" autocomplete="off">
+            <input type="hidden" name="form_type" value="usuario_comum" />
+            <input type="text" name="username" placeholder="Nome do usuário" required />
+            <input type="password" name="password" placeholder="Senha" required />
+            <button type="submit">Cadastrar Usuário</button>
         </form>
 
-        <br>
+        <!-- Formulário para nova revenda (só admin) -->
+        {% if current_user.tipo == 'admin' %}
+        <form id="formNovaRevenda" method="POST" action="{{ url_for('admin_painel') }}"
+              style="display:none; margin-top:20px;" autocomplete="off">
+            <input type="hidden" name="form_type" value="revenda" />
+            <input type="text" name="username" placeholder="Nome de usuário" required />
+            <input type="password" name="password" placeholder="Senha" required />
+            <input type="text" name="nome" placeholder="Nome completo" required />
+            <input type="text" name="telefone" placeholder="Telefone" required />
+            <input type="email" name="email" placeholder="E-mail" required />
+            <input type="text" name="cpf_cnpj" placeholder="CPF ou CNPJ" required />
+            <input type="text" name="endereco" placeholder="Endereço" required />
+            <input type="text" name="cidade" placeholder="Cidade" required />
+            <input type="text" name="uf" placeholder="UF" maxlength="2" required />
+            <button type="submit">Cadastrar Revenda</button>
+        </form>
+        {% endif %}
+
+        <br />
         <a class="btn-exit" href="{{ url_for('admin_painel') }}">Voltar ao Painel</a>
     </div>
 
-    <!-- Javascript para Filtro de Pesquisa -->
     <script>
-        const searchInput = document.getElementById("search");
-        searchInput.addEventListener("input", function () {
-            const query = searchInput.value.toLowerCase();
-            const userCards = document.querySelectorAll(".user-card");
-
-            userCards.forEach(function (card) {
-                const username = card.querySelector("strong").textContent.toLowerCase();
-                if (username.includes(query)) {
-                    card.style.display = "block";
-                } else {
-                    card.style.display = "none";
-                }
+        // Filtro de busca
+        document.getElementById("search").addEventListener("input", function(){
+            const q = this.value.toLowerCase();
+            document.querySelectorAll(".user-card").forEach(card => {
+                const name = card.querySelector("span strong").nextSibling.textContent.trim().toLowerCase();
+                card.style.display = name.includes(q) ? "block" : "none";
             });
         });
+
+        // Toggle formulários
+        const fUser = document.getElementById("formNovoUsuario"),
+              fRev  = document.getElementById("formNovaRevenda");
+        document.getElementById("btnNovoUsuario").onclick = ()=>{
+            fUser.style.display = "block";
+            if(fRev) fRev.style.display = "none";
+        };
+        const btnRev = document.getElementById("btnNovaRevenda");
+        if(btnRev){
+            btnRev.onclick = ()=>{
+                fRev.style.display = "block";
+                fUser.style.display = "none";
+            };
+        }
     </script>
 </body>
 </html>
