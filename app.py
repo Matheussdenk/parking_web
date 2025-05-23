@@ -242,11 +242,6 @@ def deletar_usuario(user_id):
     flash("Usuário excluído com sucesso.")
     return redirect('/admin/painel')
 
-@app.before_request
-def require_login():
-    if not current_user.is_authenticated and request.endpoint not in ('login', 'register', 'static'):
-        return redirect(url_for('login'))
-
 @app.route('/config', methods=['GET', 'POST'])
 @login_required
 def config():
@@ -366,17 +361,17 @@ def exit_vehicle(plate):
 @app.route("/historico/entradas", endpoint="historico_entradas")
 def entradas():
     # busca entradas do usuário
-    user_id = session.get('user_id')
-    if not user_id:
+    if not current_user.is_authenticated:
         return redirect('/login')
+
     entradas = Entry.query.filter_by(user_id=user_id).all()
     return render_template("entradas.html", entradas=entradas)
 
 @app.route("/historico/saidas", endpoint="historico_saidas")
 def saidas():
-    user_id = session.get('user_id')
-    if not user_id:
+    if not current_user.is_authenticated:
         return redirect('/login')
+
     
     saidas = Exit.query.filter_by(user_id=user_id).all()
 
