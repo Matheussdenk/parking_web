@@ -1,14 +1,19 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-from models import db, User, ConfigData, Entry, Exit, VehicleType
-from config import Config
-from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
+from flask_migrate import Migrate
+from flask_login import LoginManager, login_user, login_required, current_user, logout_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from io import BytesIO
+from datetime import datetime
 from reportlab.pdfgen import canvas
-from flask_migrate import Migrate
+
+# Modelos de dados e banco de dados
+from models import db, User, ConfigData, Entry, Exit, VehicleType
+
+# Configurações de aplicação
+from config import Config
+
+# Formulários
 from forms import RevendaRegisterForm
-from flask_login import LoginManager, login_user, login_required, current_user, logout_user, UserMixin
-from flask import send_file
 
 
 app = Flask(__name__)
@@ -24,7 +29,7 @@ migrate = Migrate(app, db)
 # Função para carregar o usuário no Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))  # Substituindo query.get() por db.session.get()
 
 @app.route('/')
 def index():
@@ -180,7 +185,7 @@ def admin_painel():
 @app.route('/admin/usuarios/editar/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def editar_usuario(user_id):
-    user = User.query.get(user_id)
+    user = db.session.get(User, int(user_id))  # Alterado para db.session.get()
     if not user:
         flash("Usuário não encontrado.")
         return redirect('/admin/painel')
@@ -222,7 +227,7 @@ def editar_usuario(user_id):
 @app.route('/admin/usuarios/deletar/<int:user_id>', methods=['POST'])
 @login_required
 def deletar_usuario(user_id):
-    user_to_delete = User.query.get(user_id)
+    user_to_delete = db.session.get(User, int(user_id))  # Alterado para db.session.get()
     if not user_to_delete:
         flash("Usuário não encontrado.")
         return redirect('/admin/painel')
@@ -243,12 +248,13 @@ def require_login():
         return redirect(url_for('login'))
 
 @app.route('/config', methods=['GET', 'POST'])
+@login_required
 def config():
-    if 'user_id' not in session:
-        return redirect('/login')
-
-    user_id = session['user_id']
+    user_id = current_user.id
     config = ConfigData.query.filter_by(user_id=user_id).first()
+
+    carro = VehicleType.query.filter_by(type='Carro', user_id=user_id).first()
+    moto = VehicleType.query.filter_by(type='Moto', user_id=user_id).first()
 
     if request.method == 'POST':
         if not config:
@@ -260,29 +266,39 @@ def config():
         config.phone = request.form['phone']
         db.session.add(config)
 
-        # Atualiza ou cria valores de hora para carros e motos para esse usuário
-        for tipo in ['Carro', 'Moto']:
-            valor = float(request.form[f'{tipo.lower()}_value'])
-            vt = VehicleType.query.filter_by(type=tipo, user_id=user_id).first()
-            if not vt:
-                vt = VehicleType(type=tipo, hour_value=valor, user_id=user_id)
-                db.session.add(vt)
-            else:
-                vt.hour_value = valor
+        # Atualiza valores
+        carro_valor = float(request.form['carro_value'])
+        moto_valor = float(request.form['moto_value'])
+
+        if not carro:
+            carro = VehicleType(type='Carro', hour_value=carro_valor, user_id=user_id)
+            db.session.add(carro)
+        else:
+            carro.hour_value = carro_valor
+
+        if not moto:
+            moto = VehicleType(type='Moto', hour_value=moto_valor, user_id=user_id)
+            db.session.add(moto)
+        else:
+            moto.hour_value = moto_valor
 
         db.session.commit()
-
         flash("Configurações salvas.")
         return redirect('/dashboard')
 
-    return render_template('config.html', config=config)
+    return render_template(
+        'config.html',
+        config=config,
+        carro_value=carro.hour_value if carro else '',
+        moto_value=moto.hour_value if moto else ''
+    )
 
 @app.route('/entry', methods=['POST'])
 def entry():
     if 'user_id' not in session:
         return redirect('/login')
 
-    user_id = session['user_id']
+    user_id = current_user.id
     plate = request.form['plate'].upper()
     vehicle_type = request.form['vehicle_type']
 
@@ -301,7 +317,7 @@ def exit_vehicle(plate):
     if 'user_id' not in session:
         return redirect('/login')
 
-    user_id = session['user_id']
+    user_id = current_user.id
     entry = Entry.query.filter_by(plate=plate, user_id=user_id).first()
 
     if entry:
@@ -381,7 +397,7 @@ def exit_vehicle_custom():
     if 'user_id' not in session:
         return redirect('/login')
 
-    user_id = session['user_id']
+    user_id = current_user.id
     plate = request.form['plate'].upper()
     custom_value = float(request.form['custom_value'])
 
@@ -437,7 +453,7 @@ def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=Tru
 
 @app.before_request
 def require_login():
-    if not session.get("user_id") and request.endpoint not in ('login', 'register', 'static'):
+    if not current_user.is_authenticated and request.endpoint not in ('login', 'register', 'static'):
         return redirect(url_for('login'))
 
 if __name__ == '__main__':

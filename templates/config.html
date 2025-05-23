@@ -2,10 +2,9 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
-    <title>config</title>
+    <title>Configurações</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <style>
-        /* Seu CSS mantido, sem alterações */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
@@ -53,9 +52,7 @@
             transition: border-color 0.3s ease;
         }
 
-        form input[type="text"]:focus,
-        form input[type="tel"]:focus,
-        form input[type="number"]:focus {
+        form input:focus {
             border-color: #007bff;
             outline: none;
         }
@@ -148,7 +145,7 @@
                 min="0"
                 step="0.01"
                 placeholder="Exemplo: 5.00"
-                value="{{ config.carro_value if config else '' }}"
+                value="{{ carro_value if carro_value else '' }}"
             >
 
             <label for="moto_value">Valor por Hora - Moto (R$):</label>
@@ -160,7 +157,7 @@
                 min="0"
                 step="0.01"
                 placeholder="Exemplo: 3.00"
-                value="{{ config.moto_value if config else '' }}"
+                value="{{ moto_value if moto_value else '' }}"
             >
 
             <button type="submit" aria-label="Salvar configurações">Salvar Configurações</button>
