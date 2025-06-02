@@ -5,15 +5,20 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from io import BytesIO
 from datetime import datetime
 from reportlab.pdfgen import canvas
-
+import os
+from datetime import datetime
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 # Modelos de dados e banco de dados
 from models import db, User, ConfigData, Entry, Exit, VehicleType
-
 # Configurações de aplicação
 from config import Config
-
 # Formulários
 from forms import RevendaRegisterForm
+from datetime import datetime, timezone
+from flask import make_response
+from io import BytesIO
+from reportlab.lib.units import mm
 
 
 app = Flask(__name__)
@@ -289,74 +294,100 @@ def config():
     )
 
 @app.route('/entry', methods=['POST'])
+@login_required
 def entry():
-    if 'user_id' not in session:
-        return redirect('/login')
+    plate = request.form.get('plate', '').upper()
+    vehicle_type = request.form.get('vehicle_type')
 
-    user_id = current_user.id
-    plate = request.form['plate'].upper()
-    vehicle_type = request.form['vehicle_type']
+    if not plate or not vehicle_type:
+        flash("Placa e tipo de veículo são obrigatórios.")
+        return redirect('/dashboard')
 
-    if Entry.query.filter_by(plate=plate, user_id=user_id).first():
+    if Entry.query.filter_by(plate=plate, user_id=current_user.id).first():
         flash("Veículo já está no pátio.")
         return redirect('/dashboard')
 
-    entry = Entry(plate=plate, vehicle_type=vehicle_type, user_id=user_id)
-    db.session.add(entry)
+    try:
+        entry = Entry(plate=plate, vehicle_type=vehicle_type, user_id=current_user.id)
+        db.session.add(entry)
+        db.session.commit()
+        return generate_pdf_response(plate, entry.entry_time, vehicle_type, entry=True)
+    except Exception as e:
+        print(f"Erro ao registrar entrada: {e}")
+        flash("Erro ao registrar entrada.")
+        return redirect('/dashboard')
+
+
+@app.route('/exit_vehicle/<plate>')
+def exit_vehicle(plate):
+    user_id = current_user.id
+
+    entry = Entry.query.filter_by(plate=plate, user_id=user_id).first()
+    if not entry:
+        flash("Veículo não encontrado no pátio.")
+        return redirect('/dashboard')
+
+    exit_time = datetime.utcnow()
+    duration = (exit_time - entry.entry_time).total_seconds() / 3600.0
+
+    rate = VehicleType.query.filter_by(type=entry.vehicle_type, user_id=user_id).first()
+    if not rate:
+        flash("Valor por hora não configurado para este tipo de veículo.")
+        return redirect('/dashboard')
+
+    total_value = rate.hour_value if duration <= 1 else rate.hour_value + (duration - 1) * rate.hour_value
+
+    saida = Exit(
+        plate=plate,
+        exit_time=exit_time,
+        total_value=total_value,
+        duration=duration,
+        user_id=user_id
+    )
+    db.session.add(saida)
+    db.session.delete(entry)
     db.session.commit()
 
-    return generate_pdf_response(plate, entry.entry_time, vehicle_type, entry=True)
+    flash(f"Saída registrada com sucesso! Valor: R$ {total_value:.2f}")
 
-@app.route('/exit/<plate>', methods=['GET'])
-def exit_vehicle(plate):
-    if 'user_id' not in session:
-        return redirect('/login')
+    config = ConfigData.query.filter_by(user_id=user_id).first()
+    company_name = config.company_name if config else "Nome da Empresa"
 
-    user_id = current_user.id
-    entry = Entry.query.filter_by(plate=plate, user_id=user_id).first()
+    return gerar_pdf_saida(
+        plate=plate,
+        entry_time=entry.entry_time,
+        exit_time=exit_time,
+        vehicle_type=entry.vehicle_type,
+        total_value=total_value,
+        duration=duration,
+        company_name=company_name
+    )
 
-    if entry:
-        entry_time = entry.entry_time
-        exit_time = datetime.utcnow()
+def gerar_pdf_saida(plate, entry_time, exit_time, vehicle_type, total_value, duration, company_name):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=(80*mm, 200*mm))  # bobina 80mm, altura ajustável
 
-        # Calculando a duração em horas
-        duration = (exit_time - entry.entry_time).total_seconds() / 3600.0
+    c.setFont("Helvetica-Bold", 12)
+    c.drawCentredString(40*mm, 180*mm, company_name)  # Centralizado no topo
 
-        # Verificando se o valor por hora está configurado corretamente
-        rate = VehicleType.query.filter_by(type=entry.vehicle_type, user_id=user_id).first()
+    c.setFont("Helvetica", 10)
+    c.drawString(10*mm, 160*mm, f"Placa: {plate}")
+    c.drawString(10*mm, 145*mm, f"Entrada: {entry_time.strftime('%d/%m/%Y %H:%M:%S')}")
+    c.drawString(10*mm, 130*mm, f"Saída: {exit_time.strftime('%d/%m/%Y %H:%M:%S')}")
+    c.drawString(10*mm, 115*mm, f"Duração: {duration:.2f} horas")
+    c.drawString(10*mm, 100*mm, f"Tipo: {vehicle_type}")
+    c.drawString(10*mm, 85*mm, f"Valor Total: R$ {total_value:.2f}")
 
-        if not rate:
-            flash("Valor por hora não configurado.")
-            return redirect('/dashboard')
+    c.showPage()
+    c.save()
+    buffer.seek(0)
 
-        # Calculando o valor total
-        value = rate.hour_value
-        total_value = value if duration <= 1 else value + (duration - 1) * value
-
-        # Debug: Verificar valores calculados
-        print(f"Duração: {duration:.2f} horas")
-        print(f"Valor por hora: R$ {value:.2f}")
-        print(f"Valor total calculado: R$ {total_value:.2f}")
-
-        # Registrar a saída no banco de dados
-        saida = Exit(
-            plate=plate,
-            exit_time=exit_time,
-            total_value=total_value,
-            duration=duration,
-            user_id=user_id
-        )
-        
-        db.session.add(saida)
-        db.session.delete(entry)
-        db.session.commit()
-
-        flash(f"Saída registrada com sucesso! Valor: R$ {total_value:.2f}")
-
-        return generate_pdf_response(plate, exit_time, entry.vehicle_type, total_value=total_value, entry=False, entry_time=entry.entry_time)
-
-    flash("Placa não encontrada.")
-    return redirect('/dashboard')
+    return send_file(
+        buffer,
+        as_attachment=False,  # inline para abrir no navegador
+        download_name=f"{plate}_saida.pdf",
+        mimetype='application/pdf'
+    )
 
 @app.route("/historico/entradas", endpoint="historico_entradas")
 def entradas():
@@ -364,7 +395,7 @@ def entradas():
     if not current_user.is_authenticated:
         return redirect('/login')
 
-    entradas = Entry.query.filter_by(user_id=user_id).all()
+    entradas = Entry.query.filter_by(user_id=current_user.id).all()
     return render_template("entradas.html", entradas=entradas)
 
 @app.route("/historico/saidas", endpoint="historico_saidas")
@@ -373,7 +404,7 @@ def saidas():
         return redirect('/login')
 
     
-    saidas = Exit.query.filter_by(user_id=user_id).all()
+    saidas = Exit.query.filter_by(user_id=current_user.id).all()
 
     # Depuração: Verificando todos os valores das saídas
     print("Saídas encontradas no banco de dados:")
@@ -434,7 +465,7 @@ def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=Tru
     c.drawCentredString(200, 185, f"Tipo: {vehicle_type}")
     
     if entry:
-        c.drawCentredString(200, 165, f"Entrada: {time.strftime('%d/%m/%Y %H:%M')}")
+        c.drawCentredString(200, 165, f"Entrada: {time.strftime('%d/%m/%Y %H:%M')}")  # Formatação da data
     else:
         c.drawCentredString(200, 165, f"Entrada: {entry_time.strftime('%d/%m/%Y %H:%M')}")
         c.drawCentredString(200, 150, f"Saída: {time.strftime('%d/%m/%Y %H:%M')}")
@@ -444,7 +475,20 @@ def generate_pdf_response(plate, time, vehicle_type, total_value=None, entry=Tru
     c.save()
     buffer.seek(0)
 
-    return send_file(buffer, as_attachment=False, download_name=f"{plate}_{'entrada' if entry else 'saida'}.pdf", mimetype='application/pdf')
+    response = send_file(
+        buffer,
+        as_attachment=False,
+        download_name=f"{plate}_{'entrada' if entry else 'saida'}.pdf",
+        mimetype='application/pdf'
+    )
+
+    # Forçando o PDF a abrir na janela do navegador (em uma nova aba)
+    response.headers['Content-Disposition'] = 'inline; filename=' + f"{plate}_{'entrada' if entry else 'saida'}.pdf"
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+
+    return response
 
 @app.before_request
 def require_login():

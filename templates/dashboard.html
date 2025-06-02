@@ -332,7 +332,8 @@
                     {{ horas }}h {% if minutos_restantes > 0 %}{{ minutos_restantes }}min{% endif %}
                 {% endif %}
 
-                <a href="{{ url_for('exit_vehicle', plate=entry.plate) }}">Registrar Saída</a>
+                <!-- Modificado para abrir PDF em nova aba -->
+                <a href="{{ url_for('exit_vehicle', plate=entry.plate) }}" class="exit-link">Registrar Saída</a>
 
                 <!-- Formulário oculto -->
                 <form method="POST" action="{{ url_for('exit_vehicle_custom') }}" id="form-{{ entry.plate }}" class="custom-value-form" style="display: none;">
@@ -360,15 +361,29 @@
 </main>
 
 <script>
-function toggleCustomForm(plate) {
-    const form = document.getElementById(`form-${plate}`);
-    form.style.display = form.style.display === "none" ? "block" : "none";
+function openPDFInNewTab(pdfUrl) {
+    // Abre o PDF em uma nova aba
+    var newTab = window.open(pdfUrl, '_blank');
+    if (newTab) {
+        newTab.focus();  // Foca na nova aba
+    } else {
+        alert("Por favor, permita pop-ups para visualizar o PDF.");
+    }
 }
 
-function toggleMenu() {
-    const menu = document.getElementById('mobileMenu');
-    menu.style.display = menu.style.display === "none" ? "flex" : "none";
-}
+document.addEventListener('DOMContentLoaded', function() {
+    // Adiciona o evento de clique no link "Registrar Saída"
+    const exitLinks = document.querySelectorAll('.exit-link');
+    
+    exitLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();  // Previne o comportamento padrão (navegar para a página)
+
+            const pdfUrl = link.href; // Aqui, o link já deve ser o URL do PDF gerado
+            openPDFInNewTab(pdfUrl);  // Abre o PDF em uma nova aba
+        });
+    });
+});
 </script>
 </body>
 </html>
